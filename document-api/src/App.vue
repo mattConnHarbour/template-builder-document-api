@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, onBeforeUnmount } from 'vue';
+import { ref, shallowRef, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { SuperDoc } from 'superdoc';
 import { TemplateBuilderApi, type TemplateField, type FieldDefinition } from './template-builder-api';
 import FieldInsertMenu from './components/FieldInsertMenu.vue';
@@ -97,7 +97,9 @@ onMounted(() => {
       console.log('SuperDoc ready');
 
       setTimeout(refreshFields, 500);
-      fieldMenuRef.value?.setupTriggerListener();
+      nextTick(() => {
+        fieldMenuRef.value?.setupTriggerListener();
+      });
 
       superdoc.activeEditor?.on('update', () => {
         setTimeout(refreshFields, 100);
@@ -249,6 +251,7 @@ onBeforeUnmount(() => {
 
 .editor-container {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
@@ -272,7 +275,8 @@ onBeforeUnmount(() => {
 }
 
 .sidebar {
-  width: 280px;
+  width: 320px;
+  flex-shrink: 0;
   background: white;
   border-left: 1px solid #e0e0e0;
   padding: 16px;

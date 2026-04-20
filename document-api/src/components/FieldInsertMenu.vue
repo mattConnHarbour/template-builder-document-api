@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 import type { SuperDoc } from 'superdoc';
 import type { FieldDefinition } from '../template-builder-api';
 import { TriggerMenuController } from '../trigger-menu-controller';
@@ -68,6 +68,11 @@ const setupTriggerListener = () => {
     },
   });
 };
+
+// Clean up on unmount
+onBeforeUnmount(() => {
+  controller?.destroy();
+});
 
 // Expose setup method for parent to call when superdoc becomes ready
 defineExpose({ setupTriggerListener });

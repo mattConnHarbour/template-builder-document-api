@@ -62,18 +62,6 @@ export class TemplateBuilderApi {
     this.editor.commands?.selectStructuredContentById?.(id);
   }
 
-  getFieldContent(id: string, mode: 'inline' | 'block'): string | null {
-    const target = { kind: mode, nodeType: 'sdt', nodeId: id };
-    const result = this.doc.contentControls.getContent({ target });
-    return result.content ?? null;
-  }
-
-  setFieldContent(id: string, mode: 'inline' | 'block', content: string): boolean {
-    const target = { kind: mode, nodeType: 'sdt', nodeId: id };
-    const result = this.doc.contentControls.replaceContent({ target, content, format: 'text' });
-    return result.success;
-  }
-
   async export(fileName = 'template'): Promise<void> {
     await this.superdoc.export({
       exportType: ['docx'],

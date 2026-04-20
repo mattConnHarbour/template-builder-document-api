@@ -30,6 +30,9 @@ export class TriggerMenuController {
   private triggerFrom: number | null = null; // Position after trigger - for filtering
   private deleteFrom: number | null = null; // Position before trigger - for cleanup
   private query = '';
+  private destroyed = false;
+  private boundUpdateHandler: ((event: unknown) => void) | null = null;
+  private boundBlurHandler: (() => void) | null = null;
 
   constructor(superdoc: SuperDoc, options: TriggerMenuOptions = {}) {
     this.superdoc = superdoc;
@@ -77,12 +80,32 @@ export class TriggerMenuController {
     this.close();
   }
 
+  /** Remove event listeners and clean up */
+  destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+
+    const editor = this.superdoc.activeEditor;
+    if (editor) {
+      if (this.boundUpdateHandler) {
+        editor.off('update', this.boundUpdateHandler);
+      }
+      if (this.boundBlurHandler) {
+        editor.off('blur', this.boundBlurHandler);
+      }
+    }
+
+    this.close();
+  }
+
   private setupListeners(): void {
     const editor = this.superdoc.activeEditor;
     if (!editor) return;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    editor.on('update', (event: any) => {
+    this.boundUpdateHandler = (event: any) => {
+      if (this.destroyed) return;
+
       const e = event.editor || event;
       const state = e.state;
       if (!state) return;
@@ -125,13 +148,15 @@ export class TriggerMenuController {
           this.onPositionChange?.({ top: coords.bottom + 4, left: coords.left });
         }
       }
-    });
+    };
 
-    // Close menu on blur
-    editor.on('blur', () => {
+    this.boundBlurHandler = () => {
       setTimeout(() => {
-        if (this.isOpen) this.close();
+        if (!this.destroyed && this.isOpen) this.close();
       }, 200);
-    });
+    };
+
+    editor.on('update', this.boundUpdateHandler);
+    editor.on('blur', this.boundBlurHandler);
   }
 }
