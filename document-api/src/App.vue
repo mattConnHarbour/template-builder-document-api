@@ -3,6 +3,7 @@ import { ref, shallowRef, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { SuperDoc } from 'superdoc';
 import { TemplateBuilderApi, type TemplateField, type FieldDefinition } from './template-builder-api';
 import FieldInsertMenu from './components/FieldInsertMenu.vue';
+import { AutofillController } from './autofill-controller';
 
 // =============================================================================
 // Config
@@ -28,6 +29,15 @@ const isReady = ref(false);
 const fields = ref<TemplateField[]>([]);
 const selectedFieldId = ref<string | null>(null);
 const fieldMenuRef = ref<InstanceType<typeof FieldInsertMenu> | null>(null);
+
+// Variable resolution mode: 'menu' (existing trigger menu) or 'autofill' (auto-replace on closing delimiter)
+type ResolutionMode = 'menu' | 'autofill';
+const resolutionMode = ref<ResolutionMode>('menu');
+let autofillController: AutofillController | null = null;
+
+// Template delimiters for display (avoids Vue parsing issues)
+const openDelimiter = '{{';
+const closeDelimiter = '}}';
 
 // =============================================================================
 // Click Handlers
@@ -78,6 +88,52 @@ const handleExport = async () => {
 };
 
 // =============================================================================
+// Resolution Mode Handlers
+// =============================================================================
+
+const setupAutofillController = () => {
+  if (!superdocInstance.value) return;
+
+  autofillController = new AutofillController(superdocInstance.value, {
+    availableFields: AVAILABLE_FIELDS,
+    onAutoInsert: (field) => {
+      console.log(`Auto-inserted field: ${field.alias}`);
+      setTimeout(refreshFields, 100);
+    },
+  });
+};
+
+const destroyAutofillController = () => {
+  autofillController?.destroy();
+  autofillController = null;
+};
+
+const handleModeChange = (mode: ResolutionMode) => {
+  if (mode === resolutionMode.value) return;
+
+  // Clean up current controller
+  if (resolutionMode.value === 'autofill') {
+    destroyAutofillController();
+  }
+
+  resolutionMode.value = mode;
+
+  // Setup new controller if ready
+  if (isReady.value && superdocInstance.value) {
+    if (mode === 'autofill') {
+      setupAutofillController();
+    } else if (mode === 'menu') {
+      // Re-setup the menu trigger listener when switching back to menu mode
+      nextTick(() => {
+        fieldMenuRef.value?.setupTriggerListener();
+      });
+    }
+  }
+
+  console.log(`Switched to ${mode} mode`);
+};
+
+// =============================================================================
 // Lifecycle
 // =============================================================================
 
@@ -109,6 +165,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  destroyAutofillController();
   superdocInstance.value?.destroy();
 });
 </script>
@@ -117,8 +174,35 @@ onBeforeUnmount(() => {
   <div class="app">
     <!-- Header -->
     <header class="header">
-      <div class="header-hint">
-        Type <code>{{"{{"}}</code> to insert a field &nbsp;|&nbsp; Tab/Shift+Tab to navigate
+      <div class="header-left">
+        <div class="header-hint">
+          <template v-if="resolutionMode === 'menu'">
+            Type <code>{{ openDelimiter }}</code> to insert a field
+          </template>
+          <template v-else>
+            Type <code>{{ openDelimiter }}</code>variable name<code>{{ closeDelimiter }}</code> to auto-insert
+          </template>
+          &nbsp;|&nbsp; Tab/Shift+Tab to navigate
+        </div>
+        <div class="mode-toggle">
+          <span class="mode-label">Variable Resolution:</span>
+          <button
+            class="toggle-btn"
+            :class="{ active: resolutionMode === 'menu' }"
+            @click="handleModeChange('menu')"
+            :disabled="!isReady"
+          >
+            Menu
+          </button>
+          <button
+            class="toggle-btn"
+            :class="{ active: resolutionMode === 'autofill' }"
+            @click="handleModeChange('autofill')"
+            :disabled="!isReady"
+          >
+            Autofill
+          </button>
+        </div>
       </div>
       <div class="header-actions">
         <button class="btn btn-outline" :disabled="!isReady">Import File</button>
@@ -165,8 +249,9 @@ onBeforeUnmount(() => {
       </aside>
     </div>
 
-    <!-- Field Insert Menu -->
+    <!-- Field Insert Menu (only shown in menu mode) -->
     <FieldInsertMenu
+      v-if="resolutionMode === 'menu'"
       ref="fieldMenuRef"
       :superdoc="superdocInstance"
       :available-fields="AVAILABLE_FIELDS"
@@ -192,6 +277,12 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #e0e0e0;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
 .header-hint {
   color: #666;
   font-size: 14px;
@@ -202,6 +293,51 @@ onBeforeUnmount(() => {
   padding: 2px 6px;
   border-radius: 4px;
   font-family: monospace;
+}
+
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.toggle-btn {
+  padding: 4px 12px;
+  border: 1px solid #d0d0d0;
+  background: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggle-btn:first-of-type {
+  border-radius: 4px 0 0 4px;
+}
+
+.toggle-btn:last-of-type {
+  border-radius: 0 4px 4px 0;
+  margin-left: -1px;
+}
+
+.toggle-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.toggle-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .header-actions {
