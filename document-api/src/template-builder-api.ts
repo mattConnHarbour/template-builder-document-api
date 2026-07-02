@@ -43,13 +43,17 @@ export class TemplateBuilderApi {
   }
 
   insertField(field: FieldDefinition): boolean {
-    const result = this.doc.create.contentControl({
-      kind: field.mode || 'inline',
-      controlType: 'text',
-      alias: field.alias,
-      content: field.defaultValue || field.alias,
+    // Use the editor command to insert the SDT
+    // This now properly handles suggesting mode in SuperDoc
+    // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
+    const success = this.editor.commands.insertStructuredContentInline({
+      text: field.defaultValue || field.alias,
+      attrs: {
+        alias: field.alias,
+      },
     });
-    return result.success;
+
+    return success;
   }
 
   deleteField(id: string, mode: 'inline' | 'block'): boolean {
@@ -59,6 +63,7 @@ export class TemplateBuilderApi {
   }
 
   selectField(id: string): void {
+    // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
     this.editor.commands?.selectStructuredContentById?.(id);
   }
 

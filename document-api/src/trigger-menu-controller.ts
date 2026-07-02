@@ -71,8 +71,11 @@ export class TriggerMenuController {
 
     const editor = this.superdoc.activeEditor;
     if (editor) {
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       const currentPos = editor.state.selection.from;
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       const tr = editor.state.tr.delete(this.deleteFrom, currentPos);
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (editor as any).view.dispatch(tr);
     }
@@ -107,14 +110,17 @@ export class TriggerMenuController {
       if (this.destroyed) return;
 
       const e = event.editor || event;
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       const state = e.state;
       if (!state) return;
 
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       const { from } = state.selection;
 
       // Check if trigger was just typed
       if (from >= this.trigger.length && !this.isOpen) {
         const triggerStart = from - this.trigger.length;
+        // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
         const text = state.doc.textBetween(triggerStart, from);
 
         if (text === this.trigger) {
@@ -137,6 +143,7 @@ export class TriggerMenuController {
           return;
         }
 
+        // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
         const newQuery = state.doc.textBetween(this.triggerFrom, from);
         if (newQuery !== this.query) {
           this.query = newQuery;

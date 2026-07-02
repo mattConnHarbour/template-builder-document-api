@@ -112,10 +112,13 @@ export class AutofillController {
       if (this.destroyed) return;
 
       const e = event.editor || event;
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       const editorState = e.state;
       if (!editorState) return;
 
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       const cursorPos = editorState.selection.from;
+      // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
       const textEndingAt = (pos: number, length: number) =>
         pos >= length ? editorState.doc.textBetween(pos - length, pos) : '';
 
@@ -123,6 +126,7 @@ export class AutofillController {
         cursorPos,
         justTypedOpen: textEndingAt(cursorPos, this.openDelimiter.length) === this.openDelimiter,
         justTypedClose: textEndingAt(cursorPos, this.closeDelimiter.length) === this.closeDelimiter,
+        // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
         textBetween: (from, to) => editorState.doc.textBetween(from, to),
       };
 
@@ -142,29 +146,33 @@ export class AutofillController {
 
     // Find matching field (case-insensitive)
     const matchedField = this.availableFields.find((f) => f.alias.toLowerCase() === normalizedName);
-
-    if (!matchedField) return;
+    if (!matchedField) {
+      console.log('[autofill] No matching field found for:', variableName);
+      return;
+    }
 
     const editor = this.superdoc.activeEditor;
     if (!editor) return;
 
-    // Delete the entire {{variable}} text
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const editorAny = editor as any;
+
+    // Delete the typed {{variableName}} text first
+    // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
     const tr = editor.state.tr.delete(deleteFrom, deleteTo);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (editor as any).view.dispatch(tr);
+    // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
+    editorAny.view.dispatch(tr);
 
-    // Insert the SDT content control
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const doc = (editor as any).doc;
-    if (doc?.create?.contentControl) {
-      doc.create.contentControl({
-        kind: matchedField.mode || 'inline',
-        controlType: 'text',
+    // Use the editor command to insert the SDT
+    // This now properly handles suggesting mode in SuperDoc
+    // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
+    editorAny.commands.insertStructuredContentInline({
+      text: matchedField.defaultValue || matchedField.alias,
+      attrs: {
         alias: matchedField.alias,
-        content: matchedField.defaultValue || matchedField.alias,
-      });
+      },
+    });
 
-      this.onAutoInsert?.(matchedField);
-    }
+    this.onAutoInsert?.(matchedField);
   }
 }

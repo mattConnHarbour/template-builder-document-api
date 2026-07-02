@@ -23,6 +23,7 @@ const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
     return [];
   }
 
+  // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
   const tags = structuredContentHelpers.getStructuredContentTags(editor.state) || [];
 
   return tags.map((entry: any) => {
@@ -197,6 +198,7 @@ const SuperDocTemplateBuilder = forwardRef<
       const editor = superdocRef.current.activeEditor;
       const previousFields = templateFields;
 
+      // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
       const success =
         mode === 'inline'
           ? editor.commands.insertStructuredContentInline?.({
@@ -239,6 +241,7 @@ const SuperDocTemplateBuilder = forwardRef<
       if (!superdocRef.current?.activeEditor) return false;
 
       const editor = superdocRef.current.activeEditor;
+      // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
       const success = editor.commands.updateStructuredContentById?.(id, {
         attrs: updates,
       });
@@ -286,6 +289,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
       let commandResult = false;
       try {
+        // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
         commandResult = editor.commands.deleteStructuredContentById?.(id) ?? false;
       } catch {
         commandResult = false;
@@ -303,6 +307,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
         if (remainingFieldsInGroup.length === 1) {
           const lastField = remainingFieldsInGroup[0];
+          // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
           editor.commands.updateStructuredContentById?.(lastField.id, {
             attrs: { tag: undefined },
           });
@@ -346,6 +351,7 @@ const SuperDocTemplateBuilder = forwardRef<
       if (!superdocRef.current?.activeEditor) return;
 
       const editor = superdocRef.current.activeEditor;
+      // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
       editor.commands.selectStructuredContentById?.(id);
       setSelectedFieldId(id);
 
@@ -405,23 +411,31 @@ const SuperDocTemplateBuilder = forwardRef<
         if (instance?.activeEditor) {
           const editor = instance.activeEditor;
 
+          // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL (entire update handler uses PM state)
           editor.on('update', ({ editor: e }: any) => {
+            // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
             const { state } = e;
+            // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
             const { from } = state.selection;
 
             if (from >= trigger.length) {
               const triggerStart = from - trigger.length;
+              // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
               const text = state.doc.textBetween(triggerStart, from);
 
               if (text === trigger) {
+                // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
                 const coords = e.view.coordsAtPos(from);
                 const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
 
                 const cleanup = () => {
                   const editor = superdocRef.current?.activeEditor;
                   if (!editor) return;
+                  // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
                   const currentPos = editor.state.selection.from;
+                  // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
                   const tr = editor.state.tr.delete(triggerStart, currentPos);
+                  // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
                   (editor as any).view.dispatch(tr);
                 };
 
@@ -458,9 +472,11 @@ const SuperDocTemplateBuilder = forwardRef<
               return;
             }
 
+            // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
             const queryText = state.doc.textBetween(menuTriggerFromRef.current, from);
             updateMenuFilter(queryText);
 
+            // TODO: SUPERDOC V2 MIGRATION - PM INTERNAL
             const coords = e.view.coordsAtPos(from);
             const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
             setMenuPosition(bounds);
@@ -574,6 +590,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
       const mode = field.mode || 'inline';
 
+      // TODO: SUPERDOC V2 MIGRATION - DEPRECATED
       const success =
         mode === 'inline'
           ? editor.commands.insertStructuredContentInline?.({
